@@ -2,10 +2,25 @@
 
 ## `PlatformIO CLI not found`
 
-Install PlatformIO and make sure `pio` is available on `PATH`:
+Install PlatformIO Core through the CLI or the VS Code PlatformIO extension.
+
+If PlatformIO is available on `PATH`, this should work:
 
 ```sh
 pio --version
+```
+
+If you installed PlatformIO only through the VS Code extension, check the extension-managed Core:
+
+```sh
+~/.platformio/penv/bin/pio --version
+```
+
+Architon checks `~/.platformio/penv/bin` automatically. You can also add it to your shell `PATH`:
+
+```sh
+echo 'export PATH="$PATH:$HOME/.platformio/penv/bin"' >> ~/.zshrc
+source ~/.zshrc
 ```
 
 Then retry:

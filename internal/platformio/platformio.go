@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 )
 
@@ -35,6 +37,7 @@ type Result struct {
 
 type Service struct {
 	runner ProcessRunner
+	binary string
 }
 
 func New(runner ProcessRunner) *Service {
@@ -45,15 +48,17 @@ func New(runner ProcessRunner) *Service {
 }
 
 func (s *Service) Verify() error {
-	if _, err := s.runner.LookPath("pio"); err != nil {
-		return fmt.Errorf("PlatformIO CLI not found: install PlatformIO and make sure the pio binary is on PATH")
+	path, err := s.runner.LookPath("pio")
+	if err != nil {
+		return fmt.Errorf("PlatformIO CLI not found: install PlatformIO Core, or add the VS Code PlatformIO Core path to PATH; Architon checks ~/.platformio/penv/bin automatically")
 	}
+	s.binary = path
 	return nil
 }
 
 func (s *Service) Build(ctx context.Context, projectDir, environment string, timeout time.Duration, stdout, stderr io.Writer) (Result, error) {
 	return s.runner.Run(ctx, Request{
-		Name:    "pio",
+		Name:    s.commandName(),
 		Args:    []string{"run", "-e", environment},
 		Dir:     projectDir,
 		Timeout: timeout,
@@ -64,7 +69,7 @@ func (s *Service) Build(ctx context.Context, projectDir, environment string, tim
 
 func (s *Service) Upload(ctx context.Context, projectDir, environment, port string, timeout time.Duration, stdout, stderr io.Writer) (Result, error) {
 	return s.runner.Run(ctx, Request{
-		Name:    "pio",
+		Name:    s.commandName(),
 		Args:    []string{"run", "-e", environment, "-t", "upload", "--upload-port", port},
 		Dir:     projectDir,
 		Timeout: timeout,
@@ -73,10 +78,33 @@ func (s *Service) Upload(ctx context.Context, projectDir, environment, port stri
 	})
 }
 
+func (s *Service) commandName() string {
+	if s.binary != "" {
+		return s.binary
+	}
+	path, err := s.runner.LookPath("pio")
+	if err == nil {
+		s.binary = path
+		return path
+	}
+	return "pio"
+}
+
 type OSRunner struct{}
 
 func (OSRunner) LookPath(file string) (string, error) {
-	return exec.LookPath(file)
+	if path, err := exec.LookPath(file); err == nil {
+		return path, nil
+	}
+	if file != "pio" {
+		return "", exec.ErrNotFound
+	}
+	for _, candidate := range platformIOCandidates() {
+		if isExecutable(candidate) {
+			return candidate, nil
+		}
+	}
+	return "", exec.ErrNotFound
 }
 
 func (OSRunner) Run(ctx context.Context, req Request) (Result, error) {
@@ -129,4 +157,27 @@ func (OSRunner) Run(ctx context.Context, req Request) (Result, error) {
 	}
 	result.ExitCode = -1
 	return result, err
+}
+
+func platformIOCandidates() []string {
+	var candidates []string
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		candidates = append(candidates,
+			filepath.Join(home, ".platformio", "penv", "bin", "pio"),
+			filepath.Join(home, ".platformio", "penv", "bin", "platformio"),
+		)
+	}
+	candidates = append(candidates,
+		"/opt/homebrew/bin/pio",
+		"/usr/local/bin/pio",
+	)
+	return candidates
+}
+
+func isExecutable(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return info.Mode()&0o111 != 0
 }

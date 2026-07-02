@@ -21,7 +21,7 @@ Architon Runner is a local-only Go CLI. It deliberately avoids cloud services, u
 3. Resolve defaults and CLI overrides.
 4. Create `.architon/runs/<UTC timestamp>/`.
 5. Write `config.resolved.yaml`.
-6. Verify that `pio` exists on `PATH`.
+6. Resolve PlatformIO from `PATH` or the common VS Code extension Core path.
 7. Run `pio run -e <environment>`.
 8. Select the configured serial port or safely auto-detect one.
 9. Run `pio run -e <environment> -t upload --upload-port <port>`.

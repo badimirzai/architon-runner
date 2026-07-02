@@ -19,7 +19,7 @@ Architon Runner does not replace unit tests, does not prove electrical safety, i
 Prerequisites:
 
 - Go 1.25 or newer
-- PlatformIO CLI installed and available as `pio`
+- PlatformIO Core installed through either the PlatformIO CLI or the VS Code PlatformIO extension
 - An ESP32 board connected over USB
 - A PlatformIO firmware project with a valid environment name
 
@@ -30,6 +30,8 @@ From this repository, install `architon`:
 ```sh
 go install ./cmd/architon
 ```
+
+Re-run this command after pulling new Architon Runner changes so your installed `architon` binary is current.
 
 Go installs the binary into `$(go env GOPATH)/bin`. On most Macs that is `~/go/bin`.
 
@@ -48,9 +50,25 @@ architon version
 
 ### 2. Check PlatformIO
 
-Make sure PlatformIO is installed and visible:
+If you installed PlatformIO as a regular command-line tool, this should work:
 
 ```sh
+pio --version
+```
+
+If you installed PlatformIO only through the VS Code extension, `pio --version` may fail in Terminal with `zsh: command not found: pio`. That is OK. The extension usually installs PlatformIO Core here:
+
+```sh
+~/.platformio/penv/bin/pio --version
+```
+
+Architon checks `~/.platformio/penv/bin` automatically. If that command works, you can continue.
+
+Optional: add the VS Code extension's PlatformIO Core to your shell `PATH` so `pio` works directly:
+
+```sh
+echo 'export PATH="$PATH:$HOME/.platformio/penv/bin"' >> ~/.zshrc
+source ~/.zshrc
 pio --version
 ```
 
@@ -121,6 +139,12 @@ architon validate
 
 ```sh
 architon test --verbose
+```
+
+If you just updated Architon Runner and still see an old error such as `PlatformIO CLI not found: install PlatformIO and make sure the pio binary is on PATH`, reinstall the local CLI from this repository:
+
+```sh
+go install ./cmd/architon
 ```
 
 If more than one plausible serial port is connected, Architon Runner fails safely and prints the candidates. Re-run with an explicit port:
