@@ -1,0 +1,31 @@
+version: 1
+name: esp32-bno055-smoke-test
+project:
+  directory: .
+  environment: esp32-s3-devkitc-1
+device:
+  platform: esp32
+  port: auto
+  baud: 115200
+execution:
+  build_timeout: 120s
+  upload_timeout: 60s
+  boot_timeout: 15s
+  test_timeout: 30s
+steps:
+  - build
+  - upload
+  - monitor:
+      duration: 10s
+assertions:
+  - serial_contains:
+      value: "System ready"
+      within: 10s
+  - serial_contains:
+      value: "BNO055 detected"
+      within: 10s
+  - serial_not_contains:
+      value: "Guru Meditation Error"
+  - serial_not_contains:
+      value: "panic"
+      case_sensitive: false

@@ -1,0 +1,8 @@
+.DS_Store
+
+# Build output
+/architon
+/bin/
+
+# Local hardware test artifacts
+.architon/runs/
