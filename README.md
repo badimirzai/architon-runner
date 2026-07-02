@@ -23,17 +23,68 @@ Prerequisites:
 - An ESP32 board connected over USB
 - A PlatformIO firmware project with a valid environment name
 
-From this repository:
+### 1. Install the CLI
+
+From this repository, install `architon`:
 
 ```sh
 go install ./cmd/architon
 ```
 
-In your PlatformIO firmware project, create `architon.test.yaml`:
+Go installs the binary into `$(go env GOPATH)/bin`. On most Macs that is `~/go/bin`.
+
+If your terminal says `zsh: command not found: architon`, add that directory to your `PATH`:
+
+```sh
+echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Then verify:
+
+```sh
+architon version
+```
+
+### 2. Check PlatformIO
+
+Make sure PlatformIO is installed and visible:
+
+```sh
+pio --version
+```
+
+Then go to your firmware project, the directory that contains `platformio.ini`:
+
+```sh
+cd /path/to/your/platformio/project
+```
+
+### 3. Create the test file
+
+Generate a starter config:
+
+```sh
+architon init
+```
+
+`architon init` creates `architon.test.yaml`. If `platformio.ini` contains an environment like `[env:esp32-s3-devkitc-1]`, Architon uses that automatically. Otherwise pass it explicitly:
+
+```sh
+architon init --environment esp32-s3-devkitc-1
+```
+
+If the file already exists, `init` refuses to overwrite it. To replace it:
+
+```sh
+architon init --force
+```
+
+The generated file looks like this:
 
 ```yaml
 version: 1
-name: esp32-basic-smoke-test
+name: my-firmware-smoke-test
 project:
   directory: .
   environment: esp32-s3-devkitc-1
@@ -60,16 +111,16 @@ assertions:
       case_sensitive: false
 ```
 
-Validate the file:
+Edit the assertion values so they match text your firmware actually prints over serial. For the default file, your firmware must print `System ready`.
+
+### 4. Validate and run
 
 ```sh
 architon validate
 ```
 
-Run the hardware smoke test:
-
 ```sh
-architon test
+architon test --verbose
 ```
 
 If more than one plausible serial port is connected, Architon Runner fails safely and prints the candidates. Re-run with an explicit port:
@@ -78,10 +129,19 @@ If more than one plausible serial port is connected, Architon Runner fails safel
 architon test --port /dev/cu.usbmodem1101
 ```
 
+On macOS, ESP32 serial ports usually look like:
+
+```sh
+ls /dev/cu.usbmodem* /dev/cu.usbserial* 2>/dev/null
+```
+
 ## Commands
 
 ```sh
 architon version
+architon init
+architon init --environment esp32-s3-devkitc-1
+architon init --file architon.test.yaml --force
 architon validate
 architon validate --file architon.test.yaml
 architon test
